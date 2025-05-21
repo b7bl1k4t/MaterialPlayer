@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.google.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -59,35 +60,40 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Compose
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.navigation:navigation-compose:2.8.9")
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.navigation.compose)
 
     // Lifecycle
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Hilt для DI
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Room
-    implementation("androidx.room:room-runtime:2.7.0")
-    implementation("androidx.room:room-ktx:2.7.0")
-    ksp("androidx.room:room-compiler:2.7.0")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.4")
+    implementation(libs.androidx.datastore.preferences)
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.kotlinx.coroutines.android)
 
     // Coil для изображений
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.coil.compose)
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
-    implementation("com.google.firebase:firebase-auth")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("io.mockk:mockk:1.13.8")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
