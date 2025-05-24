@@ -1,5 +1,6 @@
 package com.example.materialplayer.domain.repository
 
+import android.net.Uri
 import androidx.paging.PagingData
 import com.example.materialplayer.domain.model.Folder
 import com.example.materialplayer.domain.model.Track
@@ -10,6 +11,7 @@ interface LibraryRepository {
     fun tracksByFolder(basePath: String): Flow<PagingData<Track>>
     fun tracksByArtist(artistId: Long): Flow<PagingData<Track>>
     fun tracksByAlbum(albumId: Long): Flow<PagingData<Track>>
-    fun subfolders(basePath: String): Flow<List<Folder>>
+    fun getFolderInfos(basePath: String): Flow<List<Folder>>
     fun mostPlayed(limit: Int = 100): Flow<List<Track>>
+    suspend fun rescanLibrary(roots: List<Uri>)
 }

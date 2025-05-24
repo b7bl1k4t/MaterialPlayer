@@ -4,7 +4,9 @@ import com.example.materialplayer.data.local.dto.FolderItem
 import com.example.materialplayer.domain.model.Folder
 
 fun FolderItem.toDomain() = Folder(
-    path,
-    name,
-    trackCount
+    path = path,
+    name = name,
+    parentDir = parentDir,
+    subfolderCount = subfolderCount,
+    trackCount = trackCount
 )

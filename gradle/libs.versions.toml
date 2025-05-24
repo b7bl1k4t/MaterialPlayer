@@ -23,11 +23,13 @@ navigationComposeVersion = "2.9.0"
 retrofit = "3.0.0"
 roomRuntime = "2.7.1"
 pagingCommonAndroid = "3.3.6"
+documentFile = "1.1.0"
 
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentFile" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-paging-common-android = { module = "androidx.paging:paging-common-android", version.ref = "pagingCommonAndroid" }
 androidx-paging-runtime-ktx = { module = "androidx.paging:paging-runtime-ktx", version.ref = "pagingCommonAndroid" }

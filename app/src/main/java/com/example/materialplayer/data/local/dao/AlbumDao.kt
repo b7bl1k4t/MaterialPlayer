@@ -12,9 +12,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AlbumDao {
-
+    /** Вставка списка альбомов с заменой при конфликте */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(albums: List<AlbumEntity>)
+
+    /** Найти альбом по заголовку и id артиста */
+    @Query("SELECT * FROM albums WHERE title = :title AND artist_id = :artistId LIMIT 1")
+    suspend fun findByTitleAndArtist(title: String, artistId: Long): AlbumEntity?
+
+    /** Удалить все альбомы */
+    @Query("DELETE FROM albums")
+    suspend fun deleteAll()
 
     @Query("""
         SELECT * FROM albums

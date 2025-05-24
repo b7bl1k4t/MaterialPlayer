@@ -15,6 +15,18 @@ interface ArtistDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnore(entity: ArtistEntity): Long
 
+    /** Вставка списка артистов с заменой по уникальному имени */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(artists: List<ArtistEntity>)
+
+    /** Получить артиста по имени */
+    @Query("SELECT * FROM artists WHERE name = :name LIMIT 1")
+    suspend fun findByName(name: String): ArtistEntity?
+
+    /** Удалить всех артистов */
+    @Query("DELETE FROM artists")
+    suspend fun deleteAll()
+
     @Query("SELECT id FROM artists WHERE name = :name LIMIT 1")
     suspend fun findIdByName(name: String): Long?
 

@@ -12,9 +12,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TrackDao {
 
-    /* ------------ вставка / обновление ------------ */
+    /** Удалить все треки */
+    @Query("DELETE FROM tracks")
+    suspend fun deleteAll()
+
+    /** Вставить список треков: replace при конфликте по primary key */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTracks(tracks: List<TrackEntity>)
+    suspend fun insertAll(tracks: List<TrackEntity>)
 
     @Query("UPDATE tracks SET play_count = play_count + 1 WHERE id = :trackId")
     suspend fun incPlayCount(trackId: Long)
@@ -51,21 +55,27 @@ interface TrackDao {
 
     /* ------------ подпапки + количество ------------ */
     @Query("""
-        SELECT 
-          parent_dir AS path,
-          CASE
-             WHEN INSTR(SUBSTR(parent_dir, LENGTH(:basePath)+2), '/') > 0
-             THEN SUBSTR(parent_dir, LENGTH(:basePath)+2, 
-                         INSTR(SUBSTR(parent_dir, LENGTH(:basePath)+2), '/')-1)
-             ELSE SUBSTR(parent_dir, LENGTH(:basePath)+2)
-          END AS name,
-          COUNT(*) AS trackCount
-        FROM tracks
-        WHERE parent_dir LIKE :basePath || '/%'
-        GROUP BY parent_dir
-        ORDER BY name
+        WITH folders AS (
+          SELECT DISTINCT
+            parent_dir AS path,
+            SUBSTR(parent_dir, INSTR(REVERSE(parent_dir), '/') + 1) AS name,
+            SUBSTR(parent_dir, 1, LENGTH(parent_dir) - LENGTH(SUBSTR(parent_dir, INSTR(REVERSE(parent_dir), '/') + 1)) - 1) AS parentDir
+          FROM tracks
+        )
+        SELECT
+          f.path,
+          f.name,
+          f.parentDir,
+          (SELECT COUNT(DISTINCT 
+             SUBSTR(t.parent_dir, LENGTH(f.path) + 2, 
+                    INSTR(SUBSTR(t.parent_dir, LENGTH(f.path) + 2), '/') - 1)
+           )
+           FROM tracks AS t
+           WHERE t.parent_dir LIKE f.path || '/%') AS subfolderCount,
+          (SELECT COUNT(*) FROM tracks AS t2 WHERE t2.parent_dir = f.path) AS trackCount
+        FROM folders AS f
     """)
-    fun subfolders(basePath: String): Flow<List<FolderItem>>
+    fun getFolderInfos(): Flow<List<FolderItem>>
 
     @Query("SELECT COUNT(*) FROM tracks")
     suspend fun countTracks(): Int
