@@ -4,12 +4,12 @@ data class Track(
     val id: Long,
     val filePath: String,
     val parentDir: String,
+    val durationMs: Long,
     val title: String?,
     val artistId: Long?,
     val albumId: Long?,
     val artistName: String?,
     val albumName: String?,
     val genre: String?,
-    val trackNo: Int?,
-    val durationMs: Int
+    val trackNo: Int?
 )

@@ -37,7 +37,7 @@ data class TrackEntity(
     @ColumnInfo(name = "parent_dir")
     val parentDir: String,          // полный путь к папке
     @ColumnInfo(name = "duration_ms")
-    val durationMs: Int,
+    val durationMs: Long,
     @ColumnInfo(name = "play_count")
     val playCount: Int,
 
