@@ -26,7 +26,7 @@ class RoomPlaylistRepository @Inject constructor(
         playlistDao.deletePlaylist(id)
 
     override fun playlistDetail(id: Long) =
-        playlistDao.playlistWithTracks(id).map { it.toDomain() }
+        playlistDao.getPlaylistWithTracks(id).map { it.toDomain() }
 
     override suspend fun addTrack(plId: Long, trackId: Long, order: Int) =
         playlistDao.addTrackToPlaylist(PlaylistTrackCrossRefEntity(plId, trackId, order))

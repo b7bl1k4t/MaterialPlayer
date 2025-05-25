@@ -32,8 +32,11 @@ interface PlaylistDao {
     """)
     suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: Long)
 
-    /* плейлист с наполнением */
     @Transaction
-    @Query("SELECT * FROM playlists WHERE id = :playlistId LIMIT 1")
-    fun playlistWithTracks(playlistId: Long): Flow<PlaylistWithTracks>
+    @Query("""
+        SELECT * FROM playlists
+        WHERE id = :id
+    """)
+    fun getPlaylistWithTracks(id: Long): Flow<PlaylistWithTracks>
+
 }

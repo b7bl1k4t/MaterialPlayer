@@ -24,8 +24,11 @@ class LibraryViewModel @Inject constructor(
     /* текущий режим */
     private val _mode = MutableStateFlow(LibraryMode.Folder)
     val mode: StateFlow<LibraryMode> = _mode
-
     fun setMode(mode: LibraryMode) { _mode.value = mode }
+
+    val titles = repo.allTracksByTitle()
+    val albums = repo.albumsWithArtist()
+    val artists = repo.allArtists()
 
     init {
         // ВСЕГДА слушаем rootsPrefs и сбрасываем, если он стал пустым
@@ -46,10 +49,6 @@ class LibraryViewModel @Inject constructor(
     .stateIn(viewModelScope, Eagerly, emptyList())
 
 
-//    val titleTracks = repo.allTracksSortedByTitle()    // Flow<List<TrackWithArtist>>
-//    val albums = repo.allAlbumsWithArtist()       // Flow<List<AlbumWithArtist>>
-//    val artists = repo.allArtists()                // Flow<List<ArtistWithCounts>>
-
     // Текущий выбранный путь (null = показываем корни)
     private val _current = MutableStateFlow<String?>(null)
         .apply {
@@ -69,7 +68,7 @@ class LibraryViewModel @Inject constructor(
             if (path == null) {
                 rootsFlow.asRootItems()
             } else {
-                repo.childrenOf(path)
+                repo.folderFlow(path)
                     .onEach { Log.d("LibraryVM", "childrenOf($path) → $it") }
             }
         }
@@ -134,7 +133,7 @@ class LibraryViewModel @Inject constructor(
 
                 // repo.childrenOf возвращает уже и подпапки, и треки,
                 // но нам нужен итоговый count:
-                repo.childrenOf(docBase)
+                repo.folderFlow(docBase)
                     .map { list ->
                         val folders = list.filter { it.isFolder }
                         val tracks  = list.filter { !it.isFolder }

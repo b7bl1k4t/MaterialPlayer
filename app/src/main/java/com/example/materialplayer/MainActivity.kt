@@ -8,12 +8,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.materialplayer.ui.composables.BottomBar
 import com.example.materialplayer.ui.navigation.Navigation
+import com.example.materialplayer.ui.screens.AlbumDetailScreen
+import com.example.materialplayer.ui.screens.ArtistDetailScreen
 import com.example.materialplayer.ui.screens.LibraryScreen
+import com.example.materialplayer.ui.screens.PlaylistDetailScreen
 import com.example.materialplayer.ui.screens.PlaylistsScreen
 import com.example.materialplayer.ui.screens.SearchScreen
 import com.example.materialplayer.ui.screens.SettingsScreen
@@ -27,11 +32,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialPlayerTheme {
-                val nav = rememberNavController()
+                val navController = rememberNavController()
 
-                Scaffold(bottomBar = { BottomBar(nav) }) { innerPadding ->
+                Scaffold(bottomBar = { BottomBar(navController) }) { innerPadding ->
                     NavHost(
-                        navController = nav,
+                        navController = navController,
                         startDestination = Navigation.Library.route,
                         modifier = Modifier
                             .fillMaxSize()
@@ -39,8 +44,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(Navigation.Library.route) {
                             LibraryScreen(
-                                onNavigateToSettings = { nav.navigate(Navigation.Settings.route){
-                                    popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                nav = navController,
+                                onNavigateToSettings = { navController.navigate(Navigation.Settings.route){
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 } }
@@ -52,15 +58,30 @@ class MainActivity : ComponentActivity() {
 //                                onBack = { nav.popBackStack() }
 //                            )
 //                        }
-                        composable(Navigation.Playlists.route) { PlaylistsScreen() }
-                        composable(Navigation.Search.route) { SearchScreen() }
+                        composable(Navigation.Playlists.route) { PlaylistsScreen(nav = navController) }
+                        composable(Navigation.Search.route) { SearchScreen(nav = navController) }
                         composable(Navigation.Settings.route) {
                             SettingsScreen(
-                                onDone = { nav.popBackStack(
+                                onDone = { navController.popBackStack(
                                     route = Navigation.Library.route,
                                     inclusive = false
                                 ) }
                             )
+                        }
+                        composable(
+                            "album/{id}",
+                            arguments = listOf(navArgument("id") { type = NavType.LongType })
+                        ) { AlbumDetailScreen(navController) }
+                        composable(
+                            "artist/{id}",
+                            arguments = listOf(navArgument("id") { type = NavType.LongType })
+                        ) { ArtistDetailScreen(navController) }
+                        composable(
+                            route = "playlist/{id}",
+                            arguments = listOf(navArgument("id") { type = NavType.LongType })
+                        ) { backEntry ->
+                            val id = backEntry.arguments!!.getLong("id")
+                            PlaylistDetailScreen(id = id, nav = navController)
                         }
                     }
                 }

@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.TrackEntity
+import com.example.materialplayer.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -27,10 +28,7 @@ interface TrackDao {
 
     /** Треки по названию */
     @Query("SELECT * FROM tracks ORDER BY title COLLATE NOCASE")
-    fun tracksByTitle(): PagingSource<Int, TrackEntity>
-
-    @Query("SELECT * FROM tracks WHERE parent_dir = :basePath ORDER BY file_path")
-    fun tracksByPath(basePath: String): PagingSource<Int, TrackEntity>
+    fun allTracksByTitle(): Flow<List<TrackEntity>>
 
     /** Треки по артисту + вложенная сортировка по альбому/номеру трека */
     @Query("""
@@ -46,7 +44,7 @@ interface TrackDao {
         WHERE album_id = :albumId
         ORDER BY track_no
     """)
-    fun tracksByAlbum(albumId: Long): PagingSource<Int, TrackEntity>
+    fun tracksOfAlbum(albumId: Long): Flow<List<TrackEntity>>
 
     /** «Most-played» */
     @Query("SELECT * FROM tracks ORDER BY play_count DESC LIMIT :limit")

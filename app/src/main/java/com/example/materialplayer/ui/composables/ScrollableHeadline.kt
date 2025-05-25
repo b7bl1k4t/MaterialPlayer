@@ -13,15 +13,13 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ScrollableHeadline(title: String) {
-    val scrollState = rememberScrollState()
-
     Text(
         text = title,
         maxLines = 1,
         overflow = TextOverflow.Companion.Visible,
         modifier = Modifier.Companion
             .fillMaxWidth()
-            .horizontalScroll(scrollState)
+            .horizontalScroll(rememberScrollState())
             .padding(16.dp),
         style = MaterialTheme.typography.headlineLarge
     )

@@ -19,21 +19,19 @@ enum class LibraryMode(val title: String) {
 }
 
 @Composable
-private fun ModeRow(
+fun ModeRow(
     selected: LibraryMode,
     onSelect: (LibraryMode) -> Unit
 ) {
-    val scroll = rememberScrollState()
     Row(
         Modifier
             .fillMaxWidth()
-            .horizontalScroll(scroll)
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         LibraryMode.entries.forEach { mode ->
-            val isSel = mode == selected
             FilterChip(
-                selected = isSel,
+                selected = mode == selected,
                 onClick = { onSelect(mode) },
                 label = { Text(mode.title) },
                 modifier = Modifier.padding(end = 8.dp)

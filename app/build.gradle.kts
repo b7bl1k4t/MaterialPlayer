@@ -92,8 +92,10 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    implementation(libs.exoplayer)
-
+    //Media3-Exoplayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.ui)
 
     // Coil для изображений
     implementation(libs.coil.compose)

@@ -12,9 +12,11 @@ import com.example.materialplayer.data.local.scan.FileScannerImpl
 import com.example.materialplayer.data.local.scan.ScanResult
 import com.example.materialplayer.data.mappers.toDomain
 import com.example.materialplayer.data.mappers.toFolderItem
+import com.example.materialplayer.data.mappers.toSummary
 import com.example.materialplayer.domain.model.AlbumDetail
 import com.example.materialplayer.domain.model.ArtistDetail
 import com.example.materialplayer.domain.model.FolderItem
+import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -70,7 +72,7 @@ class RoomLibraryRepository @Inject constructor(
         val albumKeys = results
             .map { res ->
                 res.run {
-                    val title   = album?.title ?: UNKNOWN
+                    val title = album?.title ?: UNKNOWN
                     val artName = artist?.name ?: UNKNOWN
                     title to artName
                 }
@@ -114,28 +116,25 @@ class RoomLibraryRepository @Inject constructor(
         trackDao.insertAll(trackEntities)
     }
 
-    override fun tracksByTitle() =
-        Pager(PagingConfig(60)) { trackDao.tracksByTitle() }
-            .flow.map { it.map(TrackEntity::toDomain) }
+    override fun allTracksByTitle(): Flow<List<Track>> =
+        trackDao.allTracksByTitle().map { list -> list.map { it.toDomain() } }
 
-    override fun tracksByArtist(artistId: Long) =
-        Pager(PagingConfig(60)) { trackDao.tracksByArtist(artistId) }
-            .flow.map { it.map(TrackEntity::toDomain) }
+    override fun albumsWithArtist() =
+        albumDao.albumsWithArtist().map { list -> list.map { it.toSummary() } }
 
-    override fun tracksByAlbum(albumId: Long) =
-        Pager(PagingConfig(60)) { trackDao.tracksByAlbum(albumId) }
-            .flow.map { it.map(TrackEntity::toDomain) }
+    override fun allArtists() =
+        artistDao.allArtists().map { list -> list.map { it.toDomain() } }
+
+    override fun albumDetail(id: Long) =
+        albumDao.getAlbumWithTracks(id).map { it.toDomain() }
+
+    override fun artistDetail(id: Long) =
+        artistDao.getArtistWithAlbums(id).map { it.toDomain() }
 
     override fun mostPlayed(limit: Int) =
         trackDao.mostPlayed(limit).map { list -> list.map(TrackEntity::toDomain) }
 
-    fun getArtistDetail(id: Long): Flow<ArtistDetail> =
-        artistDao.getArtistWithAlbums(id).map { it.toDomain() }
-
-    fun getAlbumDetail(id: Long): Flow<AlbumDetail> =
-        albumDao.getAlbumWithTracks(id).map { it.toDomain() }
-
-    override fun childrenOf(basePath: String): Flow<List<FolderItem>> {
+    override fun folderFlow(basePath: String): Flow<List<FolderItem>> {
         val docBase = toDocBase(basePath)
         val folders = trackDao.getFolderInfos(docBase)
             .map { it.map(FolderItemDto::toFolderItem) }

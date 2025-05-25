@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.example.materialplayer.data.local.dto.AlbumWithArtist
 import com.example.materialplayer.data.local.dto.AlbumWithTracks
 import com.example.materialplayer.data.local.entity.AlbumEntity
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,15 @@ interface AlbumDao {
     /** Найти альбом по заголовку и id артиста */
     @Query("SELECT * FROM albums WHERE title = :title AND artist_id = :artistId LIMIT 1")
     suspend fun findByTitleAndArtist(title: String, artistId: Long): AlbumEntity?
+
+    @Transaction
+    @Query("""
+    SELECT al.*, ar.name AS artistName
+    FROM albums al
+    LEFT JOIN artists ar ON ar.id = al.artist_id
+    ORDER BY al.title COLLATE NOCASE
+    """)
+    fun albumsWithArtist(): Flow<List<AlbumWithArtist>>
 
     /** Удалить все альбомы */
     @Query("DELETE FROM albums")
