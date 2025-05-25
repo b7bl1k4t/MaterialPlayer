@@ -3,6 +3,7 @@ package com.example.materialplayer.data.local.scan
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.example.materialplayer.data.local.entity.AlbumEntity
 import com.example.materialplayer.data.local.entity.ArtistEntity
@@ -17,8 +18,9 @@ import javax.inject.Inject
  */
 class FileScannerImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val audioExtensions: Set<String> = setOf("mp3", "flac", "wav", "m4a"),
 ) : FileScanner {
+    private val audioExtensions: Set<String> = setOf("mp3", "flac", "wav", "m4a")
+
     /**
      * Сканирует указанные корневые директории (URI дерева) и возвращает список TrackEntity
      */
@@ -73,15 +75,12 @@ class FileScannerImpl @Inject constructor(
                                     coverUri = null
                                 ) }
 
-                            val parentDir = DocumentFile.fromSingleUri(context, doc.uri)
-                                ?.parentFile
-                                ?.uri
-                                ?.toString()
-                                .orEmpty()
+                            val parentDir = Uri.decode(doc.uri.toString()).substringBeforeLast('/')
+                            Log.d("SCAN_DEBUG", "save  parentDir = $parentDir")
 
                             val trackEntity = TrackEntity(
                                 id = 0L,
-                                filePath = doc.uri.toString(),
+                                filePath = Uri.decode(doc.uri.toString()),
                                 parentDir = parentDir,
                                 durationMs = durationMs,
                                 playCount = 0,

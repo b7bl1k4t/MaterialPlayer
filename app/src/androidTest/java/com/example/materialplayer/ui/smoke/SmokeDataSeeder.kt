@@ -60,7 +60,7 @@ class SmokeDataSeeder @Inject constructor(
                 durationMs = 250
             )
         )
-        trackDao.insertTracks(fakeTracks)
+        trackDao.insertAll(fakeTracks)
     }
 
     /* -------------------------------------------------- */

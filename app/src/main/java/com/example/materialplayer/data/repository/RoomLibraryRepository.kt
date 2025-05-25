@@ -1,19 +1,24 @@
 package com.example.materialplayer.data.repository
 
 import android.net.Uri
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.map
 import com.example.materialplayer.data.local.dao.*
+import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.*
 import com.example.materialplayer.data.local.scan.FileScannerImpl
 import com.example.materialplayer.data.local.scan.ScanResult
 import com.example.materialplayer.data.mappers.toDomain
+import com.example.materialplayer.data.mappers.toFolderItem
 import com.example.materialplayer.domain.model.AlbumDetail
 import com.example.materialplayer.domain.model.ArtistDetail
+import com.example.materialplayer.domain.model.FolderItem
 import com.example.materialplayer.domain.repository.LibraryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -28,66 +33,89 @@ class RoomLibraryRepository @Inject constructor(
     private val scanner: FileScannerImpl
 ) : LibraryRepository {
 
-    override suspend fun rescanLibrary(roots: List<Uri>) = withContext(Dispatchers.IO) {
+    companion object {
+        private const val UNKNOWN = "Unknown"
+    }
+
+    override suspend fun clearLibrary() {
+        // удаляем всё из таблиц – UI-поток, подписанный на DAO, сразу получит пустые списки
+        trackDao.deleteAll()
+        albumDao.deleteAll()
+        artistDao.deleteAll()
+    }
+
+    override suspend fun scanLibrary(roots: List<Uri>) = withContext(Dispatchers.IO) {
         // 1) сканируем аудио и получаем ScanResult (track + artist? + album?)
+        Log.d("SCAN", "start rescan on ${roots.size} roots")
         val results: List<ScanResult> = scanner.scanRoots(roots)
+        Log.d("SCAN", "rescan finished")
 
         // 2) очищаем все таблицы
-        trackDao.deleteAll()
-        artistDao.deleteAll()
-        albumDao.deleteAll()
+        clearLibrary()
 
         // 3) собираем и сохраняем артистов
-        val artistNames = results.mapNotNull { it.artist?.name }.distinct()
+        val artistNames = results
+            .map { it.artist?.name?.takeIf { it.isNotBlank() } ?: UNKNOWN }
+            .distinct()
+
         val artistEntities = artistNames.map { name -> ArtistEntity(id = 0L, name = name) }
         artistDao.insertAll(artistEntities)
-        // создаём карту name → generatedId
-        val artistMap = artistNames.associateWith { name ->
-            artistDao.findByName(name)!!.id
+
+        val artistMap: Map<String, Long> = artistNames.associateWith { name ->
+            artistDao.findIdByName(name)
+                ?: error("Не найден артист '$name' после insertAll()")
         }
 
         // 4) собираем и сохраняем альбомы
-        val albumKeys = results.mapNotNull { res ->
-            val alb = res.album
-            val artName = res.artist?.name
-            if (alb != null && artName != null) alb.title to artName else null
-        }.distinct()
+        val albumKeys = results
+            .map { res ->
+                res.run {
+                    val title   = album?.title ?: UNKNOWN
+                    val artName = artist?.name ?: UNKNOWN
+                    title to artName
+                }
+            }
+            .distinct()
+
         val albumEntities = albumKeys.map { (title, artName) ->
-            // проставляем artistId из карты
+            val artId = artistMap[artName] ?: error("Нет artistId для '$artName'")
             AlbumEntity(
                 id = 0L,
                 title = title,
-                artistId = artistMap[artName]!!,
+                artistId = artId,
                 coverUri = null
             )
         }
         albumDao.insertAll(albumEntities)
-        // карта (title, artistId) → generatedId
-        val albumMap = albumKeys.associate { (title, artName) ->
-            val artId = artistMap[artName]!!
-            (title to artId) to albumDao
-                .findByTitleAndArtist(title, artId)!!
-                .id
+
+        val albumMap: Map<Pair<String, Long>, Long> = albumKeys.associate { (title, artName) ->
+            val artId = artistMap[artName] ?: error("Нет artistId для '$artName'")
+            val album = requireNotNull(albumDao.findByTitleAndArtist(title, artId)) {
+                "После вставки не найден альбом '$title' для артиста '$artName'"
+            }
+            (title to artId) to album.id
         }
 
         // 5) обогащаем треки FK и сохраняем их
-        val trackEntities: List<TrackEntity> = results.map { res ->
-            val artId = res.artist?.name?.let { artistMap[it] }
-            val albId = res.album?.title?.let { title ->
-                val artName = res.artist!!.name
-                albumMap[title to artistMap[artName]!!]
-            }
-            res.track.copy(artistId = artId, albumId = albId)
+        val trackEntities = results.map { res ->
+            val artName  = res.artist?.name ?: UNKNOWN
+            val artId = artistMap[artName] ?: error("Нет artistId для '$artName'")
+            val albTitle = res.album?.title ?: UNKNOWN
+            val albId = albumMap[albTitle to artId] ?: error("Нет albumId для '$albTitle' и artId=$artId")
+
+            res.track.copy(
+                artistId   = artId,
+                albumId    = albId,
+                artistName = artName,
+                albumName  = albTitle
+            )
         }
+
         trackDao.insertAll(trackEntities)
     }
 
     override fun tracksByTitle() =
         Pager(PagingConfig(60)) { trackDao.tracksByTitle() }
-            .flow.map { it.map(TrackEntity::toDomain) }
-
-    override fun tracksByFolder(basePath: String) =
-        Pager(PagingConfig(60)) { trackDao.tracksByPath() }
             .flow.map { it.map(TrackEntity::toDomain) }
 
     override fun tracksByArtist(artistId: Long) =
@@ -98,10 +126,6 @@ class RoomLibraryRepository @Inject constructor(
         Pager(PagingConfig(60)) { trackDao.tracksByAlbum(albumId) }
             .flow.map { it.map(TrackEntity::toDomain) }
 
-    override fun getFolderInfos(basePath: String) =
-        trackDao.getFolderInfos()
-            .map { list -> list.filter { it.parentDir == basePath } .map { it.toDomain() } }
-
     override fun mostPlayed(limit: Int) =
         trackDao.mostPlayed(limit).map { list -> list.map(TrackEntity::toDomain) }
 
@@ -110,4 +134,23 @@ class RoomLibraryRepository @Inject constructor(
 
     fun getAlbumDetail(id: Long): Flow<AlbumDetail> =
         albumDao.getAlbumWithTracks(id).map { it.toDomain() }
+
+    override fun childrenOf(basePath: String): Flow<List<FolderItem>> {
+        val docBase = toDocBase(basePath)
+        val folders = trackDao.getFolderInfos(docBase)
+            .map { it.map(FolderItemDto::toFolderItem) }
+
+        val tracks = trackDao.getTracksInFolder(docBase)
+            .map { it.map(TrackEntity::toFolderItem) }
+
+        return combine(folders, tracks) { f, t -> f + t }
+    }
+
+    private fun toDocBase(path: String): String =
+        if (path.contains("/document/")) path
+        else {
+            val docId = path.substringAfter("/tree/")
+            "$path/document/$docId"
+        }
+
 }
