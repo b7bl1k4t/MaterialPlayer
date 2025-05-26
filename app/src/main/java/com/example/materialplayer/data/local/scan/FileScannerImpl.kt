@@ -52,11 +52,11 @@ class FileScannerImpl @Inject constructor(
                             )
                             val durationMs = mmr.extractMetadata(
                                 MediaMetadataRetriever.METADATA_KEY_DURATION
-                            )?.toIntOrNull() ?: 0
+                            )?.toLongOrNull() ?: 0L
                             val genre = mmr.extractMetadata(
                                 MediaMetadataRetriever.METADATA_KEY_GENRE
                             )
-                            val trackNo = mmr.extractMetadata(
+                            val trackNumber = mmr.extractMetadata(
                                 MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER
                             )?.toIntOrNull()
                             mmr.release()
@@ -90,7 +90,7 @@ class FileScannerImpl @Inject constructor(
                                 artistName = artistName,
                                 albumName = albumName,
                                 genre = genre,
-                                trackNo = trackNo
+                                trackNumber = trackNumber
                             )
 
                             results += ScanResult(

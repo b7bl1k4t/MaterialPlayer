@@ -36,7 +36,7 @@ class ExoPlaybackRepository @Inject constructor(
                         id,
                         item.mediaMetadata.title.toString(),
                         item.mediaMetadata.artist.toString(),
-                        item.mediaMetadata.durationMs!!,
+                        item.mediaMetadata.durationMs ?: 0L,
                         null, null, null, null, null, null, null,
                     )
                 }

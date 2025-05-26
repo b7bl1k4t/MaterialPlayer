@@ -15,15 +15,20 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerModule {
+
+    @Provides
+    @Singleton
+    fun provideContext(@ApplicationContext context: Context): Context = context  // Добавляем Context
+
     @Provides @Singleton
-    fun provideExoPlayer(@ApplicationContext ctx: Context) =
-        ExoPlayer.Builder(ctx).build()
+    fun provideExoPlayer(@ApplicationContext context: Context) =
+        ExoPlayer.Builder(context).build()
 
     @Provides @Singleton
     fun providePlaybackRepo(
         player: ExoPlayer,
-        ctx: Context
-    ): PlaybackRepository = ExoPlaybackRepository(player, ctx)
+        context: Context
+    ): PlaybackRepository = ExoPlaybackRepository(player, context)
 
     /** Connection, чтобы ViewModel совсем не трогали репозиторий напрямую */
     @Provides @Singleton

@@ -5,23 +5,25 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.materialplayer.data.preferences.RootsPreferences
-import com.example.materialplayer.domain.model.FolderItem
+import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.repository.LibraryRepository
 import com.example.materialplayer.ui.composables.LibraryMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.Eagerly
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.collections.flatten
 
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repo: LibraryRepository,
-    rootsPrefs: RootsPreferences,
+    private val rootsPrefs: RootsPreferences,
 ) : ViewModel() {
 
-    /* текущий режим */
+    /** Текущий режим (папки, по названию, альбомы, исполнители) */
     private val _mode = MutableStateFlow(LibraryMode.Folder)
     val mode: StateFlow<LibraryMode> = _mode
     fun setMode(mode: LibraryMode) { _mode.value = mode }
@@ -30,8 +32,8 @@ class LibraryViewModel @Inject constructor(
     val albums = repo.albumsWithArtist()
     val artists = repo.allArtists()
 
+    // Всегда слушаем rootsPrefs и сбрасываем, если он стал пустым
     init {
-        // ВСЕГДА слушаем rootsPrefs и сбрасываем, если он стал пустым
         rootsPrefs.rootsFlow
             .onEach { roots ->
                 if (roots.isEmpty()) {
@@ -43,42 +45,35 @@ class LibraryViewModel @Inject constructor(
 
     // Получаем из prefs Flow<List<Uri>> корней
     val rootsFlow = rootsPrefs.rootsFlow      // Flow<List<Uri>>
-    .onEach { roots ->
-        Log.d("LibraryVM", "rootsPrefs → $roots")
-    }
-    .stateIn(viewModelScope, Eagerly, emptyList())
+        .onEach { roots -> Log.d("LibraryVM", "rootsPrefs → $roots") }
+        .stateIn(viewModelScope, Eagerly, emptyList())
 
 
-    // Текущий выбранный путь (null = показываем корни)
+    /** Текущий путь (null → список root-ов) */
     private val _current = MutableStateFlow<String?>(null)
-        .apply {
-            onEach { Log.d("LibraryVM", "currentPath → $it") }
-        }
-
+        .apply { onEach { Log.d("LibraryVM", "currentPath → $it") } }
     val currentPath: MutableStateFlow<String?> = _current
 
-    /**
-     * Для списка корней: берём каждый URI, конвертим его в doc-base
-     * и через DAO считаем реальные subfolderCount/trackCount.
-     */
 
+    /** Список элементов для Folder-режима */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val itemsFlow: StateFlow<List<FolderItem>> =
+    val itemsFlow: StateFlow<List<BrowserItem>> =
         _current.flatMapLatest { path ->
             if (path == null) {
-                rootsFlow.asRootItems()
+                rootsFlow.asRootItems()  // Отображаем корни
             } else {
-                repo.folderFlow(path)
+                repo.folderFlow(path)  // Внутри папки
                     .onEach { Log.d("LibraryVM", "childrenOf($path) → $it") }
             }
         }
-            .stateIn(viewModelScope, Eagerly, emptyList())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 
-    /**
-     * Обработка системной «назад».
-     * Возвращаем true, если «перехватили» (т.е. внутри папки).
-     */
+    /* Данные для остальных режимов */
+
+
+    /** Назад по стеку (возвращает true если уходим из экрана) */
+    // Обработка системной кнопки «назад»
     fun onBack(): Boolean {
         val cur = _current.value ?: return false
         val parent = computeParent(cur)
@@ -93,60 +88,70 @@ class LibraryViewModel @Inject constructor(
         _current.value = null
     }
 
+    // Переход в папку
     fun onFolderClick(path: String) {
-        if (rootBoundary == null) rootBoundary = path   // запомним root один раз
+        if (rootBoundary == null) rootBoundary = path
         _current.value = path
     }
 
-    /** Возвращает родительский путь или null (если надо уйти в список корней). */
+    // Возвращает родительский путь или null (если надо уйти в список корней)
     private fun computeParent(cur: String): String? {
         val root = rootBoundary ?: return null
         if (!cur.startsWith(root)) return null
 
-        // относительный остаток без префикса root
         val rel = cur.removePrefix(root).trimStart('/')
         if (rel.isEmpty()) {
-            // мы прямо в root — следующая «назад» уходит в корни
             return null
         }
 
         val segments = rel.split('/')
         return if (segments.size == 1) {
-            // непосредственный потомок root — возвращаемся в root
             root
         } else {
-            // более глубокая вложенность — отсекаем последний сегмент
             root + "/" + segments.dropLast(1).joinToString("/")
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun Flow<List<Uri>>.asRootItems(): Flow<List<FolderItem>> =
+    private fun Flow<List<Uri>>.asRootItems(): Flow<List<BrowserItem>> =
         flatMapLatest { roots ->
-            combine(roots.map { uri ->
-                val tree = Uri.decode(uri.toString())
-                val docBase = if ("/document/" in tree) tree
-                else {
-                    val id = tree.substringAfter("/tree/")
-                    "$tree/document/$id"
-                }
+            // Для каждого URI создаём отдельный поток с элементами
+            flow {
+                val items = roots.map { uri ->
+                    val tree = Uri.decode(uri.toString())
+                    val docBase = if ("/document/" in tree) tree else {
+                        val id = tree.substringAfter("/tree/")
+                        "$tree/document/$id"
+                    }
 
-                // repo.childrenOf возвращает уже и подпапки, и треки,
-                // но нам нужен итоговый count:
-                repo.folderFlow(docBase)
-                    .map { list ->
-                        val folders = list.filter { it.isFolder }
-                        val tracks  = list.filter { !it.isFolder }
-                        FolderItem(
-                            path = tree,
-                            name = uri.lastPathSegment?.substringAfterLast(':') ?: "root",
-                            parentPath = "",
-                            isFolder = true,
-                            subfolderCount = folders.size,
-                            trackCount = folders.sumOf { it.trackCount } + tracks.size
+                    // Получаем элементы из папки для каждого пути
+                    val list = repo.folderFlow(docBase).first()
+                    val folders = list.filterIsInstance<BrowserItem.Folder>()
+                    val tracks = list.filterIsInstance<BrowserItem.TrackEntry>()
+
+                    val folderItem = BrowserItem.Folder(
+                        path = tree,
+                        name = uri.lastPathSegment?.substringAfterLast(':') ?: "root",
+                        subfolderCount = folders.size,
+                        trackCount = tracks.size
+                    )
+
+                    // Преобразуем треки в TrackEntry
+                    val trackItems: List<BrowserItem.TrackEntry> = tracks.map { track ->
+                        BrowserItem.TrackEntry(
+                            path = track.path,
+                            name = track.name,
+                            track = track.track  // Преобразуем в TrackEntry
                         )
                     }
-            }) { items -> items.toList() }
+
+                    // Возвращаем сначала папки, потом треки
+                    listOf(folderItem) + trackItems
+                }
+
+                // Мы можем безопасно вызвать flatten, так как items - это список List<BrowserItem>
+                emit(items.flatten())
+            }
         }
 }
 

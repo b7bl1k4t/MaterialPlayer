@@ -3,6 +3,7 @@ package com.example.materialplayer.data.mappers
 import android.net.Uri
 import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.TrackEntity
+import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.FolderItem
 
 fun FolderItemDto.toFolderItem(): FolderItem {
@@ -17,6 +18,13 @@ fun FolderItemDto.toFolderItem(): FolderItem {
         subfolderCount = subfolderCount
     )
 }
+
+fun FolderItemDto.toBrowserItem() = BrowserItem.Folder(
+    path = path,
+    name = path.substringAfterLast('/').substringAfterLast(':'),
+    subfolderCount = subfolderCount,
+    trackCount = trackCount
+)
 
 fun TrackEntity.toFolderItem(): FolderItem =
     FolderItem(

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.hilt.android)
+    id("com.google.gms.google-services") version "4.4.2"
 }
 hilt {
     enableAggregatingTask = false
@@ -67,7 +68,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.documentfile)
-    implementation(libs.androidx.material.icons.extended)
 
 
     // Compose
@@ -109,6 +109,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
 
     testImplementation(libs.mockk)
     testImplementation(libs.hilt.android.testing)

@@ -11,5 +11,5 @@ data class Track(
     val artistName: String?,
     val albumName: String?,
     val genre: String?,
-    val trackNo: Int?
+    val trackNumber: Int?
 )

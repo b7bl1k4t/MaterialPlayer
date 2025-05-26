@@ -22,4 +22,3 @@ class NowPlayingViewModel @Inject constructor(
         playbackConnection.seekTo(position)
     }
 }
-

@@ -10,17 +10,20 @@ import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.*
 import com.example.materialplayer.data.local.scan.FileScannerImpl
 import com.example.materialplayer.data.local.scan.ScanResult
+import com.example.materialplayer.data.mappers.toBrowserItem
 import com.example.materialplayer.data.mappers.toDomain
 import com.example.materialplayer.data.mappers.toFolderItem
 import com.example.materialplayer.data.mappers.toSummary
 import com.example.materialplayer.domain.model.AlbumDetail
 import com.example.materialplayer.domain.model.ArtistDetail
+import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.FolderItem
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -134,15 +137,31 @@ class RoomLibraryRepository @Inject constructor(
     override fun mostPlayed(limit: Int) =
         trackDao.mostPlayed(limit).map { list -> list.map(TrackEntity::toDomain) }
 
-    override fun folderFlow(basePath: String): Flow<List<FolderItem>> {
+    override fun rootFolderItems(rootList: List<String>): Flow<List<BrowserItem>> {
+        return flow {
+            emit(
+                rootList.map { path ->
+                    BrowserItem.Folder(
+                        path = path,
+                        name = path.substringAfterLast('/'),
+                        subfolderCount = 0, // Здесь нужно запросить количество подпапок
+                        trackCount = 0 // Здесь нужно запросить количество треков
+                    )
+                }
+            )
+        }
+    }
+
+    override fun folderFlow(basePath: String): Flow<List<BrowserItem>> {
         val docBase = toDocBase(basePath)
-        val folders = trackDao.getFolderInfos(docBase)
-            .map { it.map(FolderItemDto::toFolderItem) }
 
-        val tracks = trackDao.getTracksInFolder(docBase)
-            .map { it.map(TrackEntity::toFolderItem) }
+        val foldersFlow = trackDao.getFolderInfos(docBase)
+            .map { it.map { dto -> dto.toBrowserItem() } }
 
-        return combine(folders, tracks) { f, t -> f + t }
+        val tracksFlow = trackDao.getTracksInFolder(docBase)
+            .map { it.map { te -> te.toBrowserItem() } }
+
+        return combine(foldersFlow, tracksFlow, List<BrowserItem>::plus)
     }
 
     private fun toDocBase(path: String): String =
@@ -152,4 +171,15 @@ class RoomLibraryRepository @Inject constructor(
             "$path/document/$docId"
         }
 
+
+    override fun childrenOf(basePath: String): Flow<List<FolderItem>> {
+        val docBase = toDocBase(basePath)
+        val folders = trackDao.getFolderInfos(docBase)
+            .map { it.map(FolderItemDto::toFolderItem) }
+
+        val tracks = trackDao.getTracksInFolder(docBase)
+            .map { it.map(TrackEntity::toFolderItem) }
+
+        return combine(folders, tracks) { f, t -> f + t }
+    }
 }

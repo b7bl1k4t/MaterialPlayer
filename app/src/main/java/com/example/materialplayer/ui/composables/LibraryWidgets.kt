@@ -1,24 +1,14 @@
 package com.example.materialplayer.ui.composables
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,58 +17,54 @@ import androidx.compose.ui.unit.dp
 import com.example.materialplayer.R
 import com.example.materialplayer.domain.model.AlbumSummary
 import com.example.materialplayer.domain.model.Artist
-import com.example.materialplayer.domain.model.FolderItem
+import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.Track
 
+/**
+ * Общий список «папки + файлы».
+ */
 @Composable
 fun FolderView(
-    items: List<FolderItem>,
-    onFolder: (FolderItem) -> Unit,
-    onTrack: (String) -> Unit
+    items: List<BrowserItem>,
+    onFolder: (BrowserItem.Folder) -> Unit,
+    onTrack:  (Track) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
-        items(
-            items = items,
-            key = { it.path }
-        ) { item ->
-            ListItem(
-                leadingContent = {
-                    val icon = if (item.isFolder) R.drawable.ic_folder
-                    else R.drawable.baseline_music_note_24
-                    Icon(
-                        painterResource(icon),
-                        contentDescription = null
-                    )
-                },
-                headlineContent = {
-                    if (item.isFolder) {
-                        Text(item.name ?: "Без названия")
-                    } else {
-                        Text(item.path.substringAfterLast('/'))
-                    }
-                },
-
-                supportingContent = {
-                    if (item.isFolder) {
+        /* ───────────────────────────────────────────── */
+        items(items, key = { it.path }) { item ->
+            when (item) {
+                is BrowserItem.Folder -> ListItem(
+                    leadingContent = { Icon(painterResource(R.drawable.ic_folder), null) },
+                    headlineContent = { Text(item.name) },
+                    supportingContent = {
                         Text("${item.subfolderCount} подпапок · ${item.trackCount} треков")
-                    }
-                },
-                modifier = Modifier.Companion
-                    .fillMaxSize()
-                    .clickable {
-                        if (item.isFolder) onFolder(item)
-                    }
-            )
-            HorizontalDivider(
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onFolder(item) }
+                )
+
+                is BrowserItem.TrackEntry -> ListItem(
+                    leadingContent = {
+                        Icon(painterResource(R.drawable.baseline_music_note_24), null)
+                    },
+                    headlineContent   = { Text(item.track.title ?: item.name) },
+                    supportingContent = { Text(item.track.artistName ?: "Unknown") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onTrack(item.track) }
+                )
+            }
+            HorizontalDivider()
         }
+        /* ───────────────────────────────────────────── */
     }
 }
+
 
 @Composable
 fun TitleListView(list: List<Track>) {

@@ -18,21 +18,23 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.materialplayer.ui.viewmodel.PlaylistDetailViewModel
 import com.example.materialplayer.R
+import com.example.materialplayer.domain.model.Track
+import com.example.materialplayer.ui.viewmodel.PlaybackHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(
-    id: Long,
     nav: NavController,
-    vm: PlaylistDetailViewModel = hiltViewModel()
+    vm: PlaylistDetailViewModel = hiltViewModel(),
 ) {
     val data by vm.state.collectAsState()
+    val playback = hiltViewModel<PlaybackHolder>().connection
 
-    data?.let { pl ->
+    data?.let { playlist ->
         Scaffold(
             topBar = {
                 LargeTopAppBar(
-                    title = { Text(pl.playlist.title) },
+                    title = { Text(playlist.playlist.title) },
                     navigationIcon = {
                         IconButton({ nav.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
@@ -46,16 +48,19 @@ fun PlaylistDetailScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                items(pl.tracks) { t ->
+                items(playlist.tracks) { track ->
                     ListItem(
-                        headlineContent = { Text(t.filePath.substringAfterLast('/')) },
-                        supportingContent = { Text(t.artistName ?: "Unknown") },
+                        headlineContent = { Text(track.filePath.substringAfterLast('/')) },
+                        supportingContent = { Text(track.artistName ?: "Unknown") },
                         leadingContent = {
                             Icon(painterResource(R.drawable.baseline_music_note_24), null)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { /* play track */ }
+                            .clickable {
+                            playback.play(track, playlist.tracks)
+                            nav.navigate("nowPlaying")
+                        }
                     )
                     HorizontalDivider()
                 }

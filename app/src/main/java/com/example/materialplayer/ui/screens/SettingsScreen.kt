@@ -1,49 +1,69 @@
 package com.example.materialplayer.ui.screens
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.materialplayer.ui.navigation.Navigation
+import com.example.materialplayer.ui.viewmodel.AuthViewModel
 import com.example.materialplayer.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
     settingsVm: SettingsViewModel = hiltViewModel(),
+    authVm: AuthViewModel = hiltViewModel(),
+    nav: NavController,
     onDone: () -> Unit
 ) {
     val context = LocalContext.current
     val ui by settingsVm.uiState.collectAsState()
     var toDelete by remember { mutableStateOf<Uri?>(null) }
+    val user by authVm.currentUser.collectAsState()
+    val pickFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val treeUri = result.data?.data ?: return@rememberLauncherForActivityResult
+            // Берём и сохраняем права на чтение (и, при необходимости, на запись) навсегда
+            val takeFlags =
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
+            context.contentResolver.takePersistableUriPermission(treeUri, takeFlags)
+            settingsVm.onRootAdded(treeUri)
+        }
+    }
     BackHandler {
         onDone() // при системном «назад» закрываем экран настроек
-    }
-
-    val pickFolderLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-            settingsVm.onRootAdded(it)
-        }
     }
 
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(16.dp)
     ) {
-        Text("My Profile", style = MaterialTheme.typography.titleMedium)
+        Text(if (user != null) "My Profile" else "Sign In / Register",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.clickable(onClick = {
+                if (user != null) {
+                    nav.navigate(Navigation.Profile.route)
+                } else {
+                    nav.navigate(Navigation.Auth.route)
+                }
+            })
+        )
         HorizontalDivider(Modifier.padding(vertical = 16.dp))
         Text("Appearance", style = MaterialTheme.typography.titleMedium)
         HorizontalDivider(Modifier.padding(vertical = 16.dp))
@@ -74,7 +94,13 @@ fun SettingsScreen(
             }
         }
 
-        Button(onClick = { pickFolderLauncher.launch(null) },
+        Button(onClick = {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            }
+            pickFolderLauncher.launch(intent) },
             modifier = Modifier.padding(vertical = 8.dp)) {
             Text("Добавить папку")
         }
@@ -82,7 +108,6 @@ fun SettingsScreen(
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = {
-                //libraryVm.resetToRoots()
                 settingsVm.onScanClicked() },
             enabled = ui.roots.isNotEmpty() && !ui.isScanning
         ) {
@@ -103,7 +128,6 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     settingsVm.onRootRemoved(toDelete!!)
-//                    libraryVm.resetToRoots()
                     toDelete = null
                 }) {
                     Text("Удалить")
@@ -117,28 +141,3 @@ fun SettingsScreen(
         )
     }
 }
-//@Composable
-//fun DeleteRootDialog(
-//    onDismissRequest: () -> Unit,
-//    rootName: String,
-//) {
-//    AlertDialog(
-//        onDismissRequest = { toDelete = null },
-//        title = { Text("Удалить корневую папку?") },
-//        text = { Text("Вы действительно хотите убрать «${toDelete!!.lastPathSegment}» из корней?") },
-//        confirmButton = {
-//            TextButton(onClick = {
-//                settingsVm.onRootRemoved(toDelete!!)
-//                libraryVm.resetToRoots()
-//                toDelete = null
-//            }) {
-//                Text("Удалить")
-//            }
-//        },
-//        dismissButton = {
-//            TextButton(onClick = { toDelete = null }) {
-//                Text("Отмена")
-//            }
-//        }
-//    )
-//}

@@ -54,6 +54,6 @@ data class TrackEntity(
     val albumName: String?,
     val genre: String?,
     @ColumnInfo(name = "track_no")
-    val trackNo: Int?,          // TRCK
+    val trackNumber: Int?,          // TRCK
 )
 

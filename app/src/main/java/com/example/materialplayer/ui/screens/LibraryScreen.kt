@@ -2,25 +2,24 @@ package com.example.materialplayer.ui.screens
 
 import com.example.materialplayer.ui.composables.*
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.ui.composables.LibraryMode
 import com.example.materialplayer.ui.composables.LibraryPlaceholder
 import com.example.materialplayer.ui.composables.ScrollableHeadline
+import com.example.materialplayer.ui.navigation.Navigation
 import com.example.materialplayer.ui.viewmodel.LibraryViewModel
+import com.example.materialplayer.ui.viewmodel.PlaybackHolder
 
-/* ------------ PUBLIC API ------------ */
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel(),       // :contentReference[oaicite:0]{index=0}
@@ -31,15 +30,12 @@ fun LibraryScreen(
     val roots by viewModel.rootsFlow.collectAsState()
     val items by viewModel.itemsFlow.collectAsState()
     val currentPath by viewModel.currentPath.collectAsState()
-
-    val mode    by viewModel.mode.collectAsState()
-    val titles  by viewModel.titles.collectAsState(initial = emptyList())
-    val albums  by viewModel.albums.collectAsState(initial = emptyList())
+    val mode by viewModel.mode.collectAsState()
+    val titles by viewModel.titles.collectAsState(initial = emptyList())
+    val albums by viewModel.albums.collectAsState(initial = emptyList())
     val artists by viewModel.artists.collectAsState(initial = emptyList())
-
-    LaunchedEffect(items) {
-        Log.d("LibraryScreen", "Current items count=${items.size}, items=$items")
-    }
+    val playback = hiltViewModel<PlaybackHolder>().connection
+    val tracks = items.filterIsInstance<BrowserItem.TrackEntry>()
 
     // Enable system Back press only when we are inside a folder
     BackHandler(enabled = currentPath != null) {
@@ -66,8 +62,11 @@ fun LibraryScreen(
                             ScrollableHeadline(title)
                             FolderView(
                                 items = items,
-                                onFolder  = { viewModel.onFolderClick(it.path) },
-                                onTrack = {}
+                                onFolder = { viewModel.onFolderClick(it.path) },
+                                onTrack  = { track ->
+                                    playback.play(track, tracks.map { it.track })
+                                    nav.navigate(Navigation.NowPlaying.route)
+                                }
                             )
                         }
                     }

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.materialplayer.R
+import com.example.materialplayer.ui.viewmodel.PlaybackHolder
 import com.example.materialplayer.ui.viewmodel.SearchItem
 import com.example.materialplayer.ui.viewmodel.SearchViewModel
 
@@ -28,6 +29,7 @@ fun SearchScreen(
 ) {
     val query by vm.query.collectAsState()
     val items by vm.results.collectAsState()
+    val playback = hiltViewModel<PlaybackHolder>().connection
 
     Column {
         OutlinedTextField(
@@ -51,7 +53,11 @@ fun SearchScreen(
                             painterResource(R.drawable.baseline_music_note_24),
                             contentDescription = null
                         ) },
-                        modifier = Modifier.clickable { /* проиграть трек */ }
+                        modifier = Modifier.clickable {
+                            playback.play(it.track, (items.filterIsInstance<SearchItem.Track>())
+                                    .map { t -> t.track })   // очередь = все найденные
+                            nav.navigate("nowPlaying")
+                        }
                     )
 
                     is SearchItem.Album -> ListItem(
