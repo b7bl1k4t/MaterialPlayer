@@ -49,6 +49,10 @@ class RoomLibraryRepository @Inject constructor(
         artistDao.deleteAll()
     }
 
+    override suspend fun incrementPlayCount(trackId: Long) {
+        trackDao.incrementPlayCount(trackId)
+    }
+
     override suspend fun scanLibrary(roots: List<Uri>) = withContext(Dispatchers.IO) {
         // 1) сканируем аудио и получаем ScanResult (track + artist? + album?)
         Log.d("SCAN", "start rescan on ${roots.size} roots")

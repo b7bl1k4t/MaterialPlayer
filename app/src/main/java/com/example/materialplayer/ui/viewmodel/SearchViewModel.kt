@@ -6,11 +6,12 @@ import com.example.materialplayer.domain.model.*
 import com.example.materialplayer.domain.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    repo: LibraryRepository
+    private val repo: LibraryRepository
 ) : ViewModel() {
 
     /* ─ текст запроса ─ */
@@ -46,6 +47,13 @@ class SearchViewModel @Inject constructor(
             t + al + ar
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    /** Вызывается при клике на трек: инкремент + запуск воспроизведения */
+    fun onTrackClick(track: Track) {
+        viewModelScope.launch {
+            repo.incrementPlayCount(track.id)
+        }
+    }
 }
 
 /*  элементы для UI  */

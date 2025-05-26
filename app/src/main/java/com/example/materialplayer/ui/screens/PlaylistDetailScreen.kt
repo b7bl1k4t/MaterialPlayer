@@ -58,9 +58,10 @@ fun PlaylistDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                            playback.play(track, playlist.tracks)
-                            nav.navigate("nowPlaying")
-                        }
+                                vm.onTrackClick(track)
+                                playback.play(track, playlist.tracks)
+                                nav.navigate("nowPlaying")
+                            }
                     )
                     HorizontalDivider()
                 }

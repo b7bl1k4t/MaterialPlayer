@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.materialplayer.data.preferences.RootsPreferences
 import com.example.materialplayer.domain.model.BrowserItem
+import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
 import com.example.materialplayer.ui.composables.LibraryMode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -92,6 +93,13 @@ class LibraryViewModel @Inject constructor(
     fun onFolderClick(path: String) {
         if (rootBoundary == null) rootBoundary = path
         _current.value = path
+    }
+
+    /** Вызывается при клике на трек: инкремент + запуск воспроизведения */
+    fun onTrackClick(track: Track) {
+        viewModelScope.launch {
+            repo.incrementPlayCount(track.id)
+        }
     }
 
     // Возвращает родительский путь или null (если надо уйти в список корней)

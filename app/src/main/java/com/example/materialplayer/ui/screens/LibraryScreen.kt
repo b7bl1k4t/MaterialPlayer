@@ -64,6 +64,7 @@ fun LibraryScreen(
                                 items = items,
                                 onFolder = { viewModel.onFolderClick(it.path) },
                                 onTrack  = { track ->
+                                    viewModel.onTrackClick(track)
                                     playback.play(track, tracks.map { it.track })
                                     nav.navigate(Navigation.NowPlaying.route)
                                 }

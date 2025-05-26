@@ -7,5 +7,5 @@ import kotlinx.coroutines.flow.Flow
 interface HistoryRepository {
     fun recentTracks(limit: Int = 50): Flow<List<Track>>
     fun mostPlayed(limit: Int = 50):  Flow<List<Track>>
-    suspend fun recordPlay(trackId: Long)
+    suspend fun add(track: Track)
 }

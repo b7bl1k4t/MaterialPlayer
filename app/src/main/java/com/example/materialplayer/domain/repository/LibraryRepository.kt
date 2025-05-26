@@ -24,4 +24,5 @@ interface LibraryRepository {
     fun mostPlayed(limit: Int = 100): Flow<List<Track>>
     suspend fun scanLibrary(roots: List<Uri>)
     suspend fun clearLibrary()
+    suspend fun incrementPlayCount(trackId: Long)
 }

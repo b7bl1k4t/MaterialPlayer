@@ -46,6 +46,7 @@ fun AlbumDetailScreen(
                     ListItem(
                         headlineContent = { Text(track.title ?: "Unknown") },
                         modifier = Modifier.clickable {
+                            vm.onTrackClick(track)
                             playback.play(track, album.tracks)
                             nav.navigate("nowPlaying")
                         }

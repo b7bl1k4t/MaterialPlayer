@@ -54,6 +54,7 @@ fun SearchScreen(
                             contentDescription = null
                         ) },
                         modifier = Modifier.clickable {
+                            vm.onTrackClick(it.track)
                             playback.play(it.track, (items.filterIsInstance<SearchItem.Track>())
                                     .map { t -> t.track })   // очередь = все найденные
                             nav.navigate("nowPlaying")
