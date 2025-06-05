@@ -11,6 +11,7 @@ import com.example.materialplayer.data.local.entity.TrackEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -59,6 +60,14 @@ class FileScannerImpl @Inject constructor(
                             val trackNumber = mmr.extractMetadata(
                                 MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER
                             )?.toIntOrNull()
+
+                            val picture = mmr.embeddedPicture      // ByteArray?
+                            val coverUri: String? = picture?.let { bytes ->
+                                // сохраняем в кеше приложения, чтобы был Uri
+                                val file = File(context.cacheDir, "cover_${name.hashCode()}.jpg")
+                                if (!file.exists()) file.writeBytes(bytes)
+                                file.toURI().toString()
+                            }
                             mmr.release()
 
                             // Формируем сущности
@@ -72,7 +81,7 @@ class FileScannerImpl @Inject constructor(
                                     id = 0L,
                                     title = it.trim(),
                                     artistId = null,
-                                    coverUri = null
+                                    coverUri = coverUri
                                 ) }
 
 
@@ -91,6 +100,7 @@ class FileScannerImpl @Inject constructor(
                                 title = title,
                                 artistName = artistName,
                                 albumName = albumName,
+                                coverUri = coverUri,
                                 genre = genre,
                                 trackNumber = trackNumber
                             )

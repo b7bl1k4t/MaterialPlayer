@@ -19,5 +19,5 @@ fun Uri.safeDocId(): String =
 /** «красивое» имя, не падает на decoded-URI */
 val Uri.displayName: String
     get() = safeDocId()
-        .substringAfterLast('/')        // последняя часть пути
-        .substringAfterLast(':')        // убираем “primary:”
+        .substringAfterLast('/') // последняя часть пути
+        .substringAfterLast(':') // убираем “primary:”

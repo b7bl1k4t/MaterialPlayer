@@ -1,6 +1,7 @@
 [versions]
-agp = "8.10.0"
+agp = "8.10.1"
 coilCompose = "2.7.0"
+composeMaterial3 = "1.5.0-beta03"
 converterGson = "3.0.0"
 datastorePreferences = "1.1.7"
 firebaseBom = "33.14.0"
@@ -10,16 +11,17 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 kotlinxCoroutinesAndroid = "1.10.2"
-lifecycleRuntimeKtx = "2.9.0"
+lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
-composeBom = "2025.05.01"
+composeBom = "2025.06.00"
 googleKsp = "2.0.21-1.0.27"
 hiltNavigationCompose = "1.2.0"
 hiltAndroid = "2.51.1"
 composeUi = "1.8.2"
-lifecycleViewmodelCompose = "2.9.0"
+lifecycleViewmodelCompose = "2.9.1"
 mockk = "1.14.2"
 navigationComposeVersion = "2.9.0"
+playServicesAuth = "21.3.0"
 retrofit = "3.0.0"
 roomRuntime = "2.7.1"
 pagingCommonAndroid = "3.3.6"
@@ -28,6 +30,7 @@ media3 = "1.7.1"
 
 
 [libraries]
+androidx-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "composeMaterial3" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentFile" }
@@ -67,6 +70,7 @@ hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", vers
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 
 

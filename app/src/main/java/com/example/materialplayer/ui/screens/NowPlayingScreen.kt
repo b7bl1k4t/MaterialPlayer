@@ -1,23 +1,32 @@
 package com.example.materialplayer.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
+import androidx.wear.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.materialplayer.ui.viewmodel.NowPlayingViewModel
 import com.example.materialplayer.R
+import com.example.materialplayer.data.local.entity.TrackEntity
+import com.example.materialplayer.ui.composables.TrackCover
 import com.example.materialplayer.util.displayName
 import kotlin.math.max
 
@@ -31,9 +40,9 @@ fun NowPlayingScreen(
     val isPlaying by viewModel.isPlaying.collectAsState()
     val position by viewModel.positionMs.collectAsState()
 
-    // For simplicity assume track.durationMs != null
-    val duration = trackState?.durationMs ?: 0L
-    val sliderPosition = if (duration > 0) position.toFloat() / duration else 0f
+    val duration = remember { viewModel.durationMs.value }
+    var dragging by remember { mutableStateOf(false) }
+    var dragPos  by remember { mutableFloatStateOf(0f) }
 
     Scaffold(
         topBar = {
@@ -56,13 +65,15 @@ fun NowPlayingScreen(
         ) {
             Spacer(Modifier.height(24.dp))
 
-            // Album art placeholder
+            // Album art
             Box(
                 modifier = Modifier
                     .size(300.dp)
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            )
+            ){
+                TrackCover(trackState!!)
+            }
 
             Spacer(Modifier.height(24.dp))
 
@@ -92,7 +103,8 @@ fun NowPlayingScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 IconButton(
-                    onClick = { viewModel.onSeek(max(0L, position - 10_000L)) },
+                    onClick = viewModel::onPrev,
+                    onLongClick = { viewModel.onSeek(max(0L, position - 10_000L)) },
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
@@ -124,7 +136,8 @@ fun NowPlayingScreen(
                 Spacer(Modifier.width(24.dp))
 
                 IconButton(
-                    onClick = { viewModel.onSeek(position + 10_000L) },
+                    onClick = viewModel::onNext,
+                    onLongClick = { viewModel.onSeek(position + 10_000L)  },
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
@@ -143,9 +156,14 @@ fun NowPlayingScreen(
             // Progress slider + times
             Column {
                 Slider(
-                    value = sliderPosition.coerceIn(0f, 1f),
-                    onValueChange = { frac ->
-                        viewModel.onSeek((frac * duration).toLong())
+                    value = if (dragging) dragPos else viewModel.positionFraction.collectAsState().value,
+                    onValueChange = { v ->
+                        dragPos  = v
+                        dragging = true
+                    },
+                    onValueChangeFinished = {
+                        viewModel.seekToFraction(dragPos)
+                        dragging = false
                     },
                     modifier = Modifier.fillMaxWidth()
                 )

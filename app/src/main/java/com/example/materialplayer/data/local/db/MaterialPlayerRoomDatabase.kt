@@ -15,7 +15,7 @@ import com.example.materialplayer.data.local.entity.*
         PlaylistEntity::class,
         PlaylistTrackCrossRefEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

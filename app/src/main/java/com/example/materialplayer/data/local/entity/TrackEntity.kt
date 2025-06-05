@@ -53,6 +53,8 @@ data class TrackEntity(
     val artistName: String?,
     @ColumnInfo(name = "album_name")
     val albumName: String?,
+    @ColumnInfo(name = "cover_uri")
+    val coverUri: String?,
     val genre: String?,
     @ColumnInfo(name = "track_no")
     val trackNumber: Int?,          // TRCK

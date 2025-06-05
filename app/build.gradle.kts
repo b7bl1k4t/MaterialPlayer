@@ -109,7 +109,8 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation(libs.play.services.auth)
+    implementation(libs.androidx.compose.material3)
 
     testImplementation(libs.mockk)
     testImplementation(libs.hilt.android.testing)
