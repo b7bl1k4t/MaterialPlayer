@@ -9,8 +9,12 @@ import androidx.core.net.toUri
 
 fun FolderItemDto.toBrowserItem() = BrowserItem.Folder(
     path = path,                                 // **не трогаем**
-    name = path.toUri().lastPathSegment
-        ?.substringAfterLast(':') ?: "—",
+    name = path.docName(),
     subfolderCount = subfolderCount,
     trackCount = trackCount
 )
+
+private fun String.docName(): String =
+    DocumentsContract.getDocumentId(this.toUri())    // primary:Music/…
+        .substringAfterLast('/')                        // Singles & EP
+        .let(Uri::decode)                               // пробелы, «&» …

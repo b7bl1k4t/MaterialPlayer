@@ -6,6 +6,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.materialplayer.domain.model.Track
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ import javax.inject.Singleton
 @Singleton
 class ExoPlaybackRepository @Inject constructor(
     val player: ExoPlayer,                    // Hilt даёт из модуля
+    @ApplicationContext ctx: Context
 ) : PlaybackRepository {
 
     private val _current = MutableStateFlow<Track?>(null)

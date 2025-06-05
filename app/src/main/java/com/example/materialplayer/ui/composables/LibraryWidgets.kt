@@ -52,7 +52,7 @@ fun FolderView(
                     leadingContent = {
                         Icon(painterResource(R.drawable.baseline_music_note_24), null)
                     },
-                    headlineContent   = { Text(item.track.title ?: item.name) },
+                    headlineContent   = { Text(item.name) },
                     supportingContent = { Text(item.track.artistName ?: "Unknown") },
                     modifier = Modifier
                         .fillMaxWidth()

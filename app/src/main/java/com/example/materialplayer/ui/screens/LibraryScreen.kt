@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.materialplayer.domain.model.BrowserItem
@@ -19,7 +20,6 @@ import com.example.materialplayer.ui.composables.ScrollableHeadline
 import com.example.materialplayer.ui.navigation.Navigation
 import com.example.materialplayer.ui.viewmodel.LibraryViewModel
 import com.example.materialplayer.ui.viewmodel.PlaybackHolder
-import com.example.materialplayer.util.asUri
 import com.example.materialplayer.util.displayName
 
 @Composable
@@ -57,7 +57,7 @@ fun LibraryScreen(
                     else -> {
                         Column {
                             // ─── ЗАГОЛОВОК ────────────────────────────────
-                            val title = currentPath?.asUri?.displayName ?: "Roots"
+                            val title = currentPath?.toUri()?.displayName ?: "Roots"
 
                             ScrollableHeadline(title)
                             FolderView(
