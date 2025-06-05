@@ -23,5 +23,5 @@ interface LibraryRepository {
     suspend fun scanLibrary(roots: List<Uri>)
     suspend fun clearLibrary()
     suspend fun incrementPlayCount(trackId: Long)
-    suspend fun rootItemFor(uri: Uri): BrowserItem.Folder
+    suspend fun rootItem(uri: Uri): BrowserItem.Folder
 }

@@ -2,9 +2,6 @@ package com.example.materialplayer.data.repository
 
 import android.net.Uri
 import android.util.Log
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.map
 import com.example.materialplayer.data.local.dao.*
 import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.*
@@ -13,8 +10,6 @@ import com.example.materialplayer.data.local.scan.ScanResult
 import com.example.materialplayer.data.mappers.toBrowserItem
 import com.example.materialplayer.data.mappers.toDomain
 import com.example.materialplayer.data.mappers.toSummary
-import com.example.materialplayer.domain.model.AlbumDetail
-import com.example.materialplayer.domain.model.ArtistDetail
 import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
@@ -24,6 +19,8 @@ import com.example.materialplayer.util.docBaseEncoded
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -157,25 +154,30 @@ class RoomLibraryRepository @Inject constructor(
         }
     }
 
-    /* RoomLibraryRepository.kt */
-    override suspend fun rootItemFor(uri: Uri): BrowserItem.Folder {
-        val dec = uri.docBaseDecoded()
+    override suspend fun rootItem(uri: Uri): BrowserItem.Folder {
+        val base = uri.docBaseEncoded()
+
+        // subfolderCount = сколько строк вернул getFolderInfos
+        val subfolderCount =
+            trackDao.getFolderInfos(base).first().size
+
+        // trackCount  = сколько треков лежит прямо в каталоге
+        val trackCount = trackDao.countTracksRecursive(base)
+
         return BrowserItem.Folder(
-            path = uri.docBaseEncoded(),      // encoded!
+            path = base,
             name = uri.displayName,
-            subfolderCount = trackDao.countDistinctSubDirs(dec),
-            trackCount = trackDao.countDirectTracks(dec)
+            subfolderCount = subfolderCount,
+            trackCount = trackCount
         )
     }
 
 
     override fun folderFlow(basePath: String): Flow<List<BrowserItem>> {
-        val docBaseDec = Uri.parse(basePath).docBaseDecoded()
-
-        val foldersFlow = trackDao.getFolderInfos(docBaseDec)
+        val foldersFlow = trackDao.getFolderInfos(basePath)
             .map { it.map(FolderItemDto::toBrowserItem) }
 
-        val tracksFlow = trackDao.getTracksInFolder(docBaseDec)
+        val tracksFlow = trackDao.getTracksInFolder(basePath)
             .map { it.map(TrackEntity::toBrowserItem) }
 
 

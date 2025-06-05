@@ -1,6 +1,7 @@
 package com.example.materialplayer.ui.viewmodel
 
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,16 +10,12 @@ import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
 import com.example.materialplayer.ui.composables.LibraryMode
-import com.example.materialplayer.util.displayName
-import com.example.materialplayer.util.docBaseEncoded
-import com.example.materialplayer.util.parentEncoded
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.Eagerly
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.collections.flatten
 import androidx.core.net.toUri
 
 
@@ -67,7 +64,7 @@ class LibraryViewModel @Inject constructor(
             if (path == null) {
                 rootsFlow.asRootItems()  // Отображаем корни
             } else {
-                repo.folderFlow(Uri.decode(path))    // Внутри папки
+                repo.folderFlow(path)    // Внутри папки
                     .onEach { Log.d("LibraryVM", "childrenOf($path) → $it") }
             }
         }
@@ -81,7 +78,8 @@ class LibraryViewModel @Inject constructor(
     // Обработка системной кнопки «назад»
     fun onBack(): Boolean {
         val cur = _current.value ?: return false
-        val parent = computeParent(cur)
+        Log.d("NAV", "cur=$cur  parent=${parentOf(cur)}  boundary=$rootBoundary")
+        val parent = parentOf(cur)
         _current.value = parent
         return true
     }
@@ -94,10 +92,12 @@ class LibraryViewModel @Inject constructor(
     }
 
     // Переход в папку
-    fun onFolderClick(rawPath: String) {
-        val enc = rawPath                           // уже encoded
-        if (rootBoundary == null) rootBoundary = enc
-        _current.value = enc
+    fun onFolderClick(pathFromDb: String) {          // path уже encoded
+        if (_current.value == null) {                   // кликнули root
+            rootBoundary = DocumentsContract
+                .getDocumentId(pathFromDb.toUri())         // docId!
+        }
+        _current.value = pathFromDb
     }
 
     /** Вызывается при клике на трек: инкремент + запуск воспроизведения */
@@ -108,13 +108,23 @@ class LibraryViewModel @Inject constructor(
     }
 
     // Возвращает родительский путь или null (если надо уйти в список корней)
-    private fun computeParent(curEnc: String): String? =
-        curEnc.toUri().parentEncoded()
-            ?.toString()
-            ?.takeIf { rootBoundary == null || it.startsWith(rootBoundary!!) }
+    private fun parentOf(curEnc: String): String? {
+        val uri = curEnc.toUri()
+        val docId = DocumentsContract.getDocumentId(uri)
+        val cut = docId.lastIndexOf('/')
+        if (cut < 0) return null                        // уже root
+        val parentId = docId.substring(0, cut)
+
+        val parentUri = DocumentsContract.buildDocumentUriUsingTree(
+            uri, parentId).toString()
+
+        return parentUri.takeIf {
+            rootBoundary?.let(parentId::startsWith) ?: true
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun Flow<List<Uri>>.asRootItems(): Flow<List<BrowserItem.Folder>> =
-        mapLatest { roots -> roots.map { repo.rootItemFor(it) } }
+        mapLatest { roots -> roots.map { repo.rootItem(it) } }
 }
 
