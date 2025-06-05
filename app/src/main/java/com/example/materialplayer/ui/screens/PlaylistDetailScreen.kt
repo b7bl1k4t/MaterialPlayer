@@ -20,6 +20,7 @@ import com.example.materialplayer.ui.viewmodel.PlaylistDetailViewModel
 import com.example.materialplayer.R
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.ui.viewmodel.PlaybackHolder
+import com.example.materialplayer.util.displayName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +51,7 @@ fun PlaylistDetailScreen(
             ) {
                 items(playlist.tracks) { track ->
                     ListItem(
-                        headlineContent = { Text(track.filePath.substringAfterLast('/')) },
+                        headlineContent = { Text(track.filePath.displayName) },
                         supportingContent = { Text(track.artistName ?: "Unknown") },
                         leadingContent = {
                             Icon(painterResource(R.drawable.baseline_music_note_24), null)

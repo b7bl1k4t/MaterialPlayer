@@ -21,6 +21,7 @@ import com.example.materialplayer.R
 import com.example.materialplayer.ui.viewmodel.PlaybackHolder
 import com.example.materialplayer.ui.viewmodel.SearchItem
 import com.example.materialplayer.ui.viewmodel.SearchViewModel
+import com.example.materialplayer.util.displayName
 
 @Composable
 fun SearchScreen(
@@ -47,7 +48,7 @@ fun SearchScreen(
             items(items) {
                 when (it) {
                     is SearchItem.Track -> ListItem(
-                        headlineContent = { Text(it.track.filePath.substringAfterLast('/')) },
+                        headlineContent = { Text(it.track.filePath.displayName) },
                         supportingContent = { Text(it.artist) },
                         leadingContent = { Icon(
                             painterResource(R.drawable.baseline_music_note_24),

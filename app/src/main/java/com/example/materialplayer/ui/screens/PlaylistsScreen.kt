@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.materialplayer.R
 import com.example.materialplayer.ui.viewmodel.PlaylistsViewModel
+import com.example.materialplayer.util.displayName
 
 @Composable
 fun PlaylistsScreen(
@@ -74,7 +75,7 @@ fun PlaylistsScreen(
                     LazyColumn {
                         items(history) { t ->
                             ListItem(
-                                headlineContent = { Text(t.filePath.substringAfterLast('/')) },
+                                headlineContent = { Text(t.filePath.displayName) },
                                 supportingContent = { Text(t.artistName ?: "Unknown") },
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -88,7 +89,7 @@ fun PlaylistsScreen(
                         items(mostPlayed) { t ->
                             ListItem(
                                 leadingContent = { Icon(painterResource(R.drawable.outline_album_24), null) },
-                                headlineContent = { Text(t.filePath.substringAfterLast('/')) },
+                                headlineContent = { Text(t.filePath.displayName) },
                                 supportingContent = { Text(t.artistName ?: "Unknown") },
                                 modifier = Modifier.fillMaxWidth()
                             )

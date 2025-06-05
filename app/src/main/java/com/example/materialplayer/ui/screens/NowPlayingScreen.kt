@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.materialplayer.ui.viewmodel.NowPlayingViewModel
 import com.example.materialplayer.R
+import com.example.materialplayer.util.displayName
 import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +27,7 @@ fun NowPlayingScreen(
     onBack: () -> Unit,
     viewModel: NowPlayingViewModel = hiltViewModel()
 ) {
-    val trackState  by viewModel.track.collectAsState()
+    val trackState by viewModel.track.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val position by viewModel.positionMs.collectAsState()
 
@@ -68,7 +69,7 @@ fun NowPlayingScreen(
             // Track title
             Text(
                 text = trackState?.title.orEmpty()
-                    .ifBlank { trackState?.filePath.orEmpty().substringAfterLast('/') },
+                    .ifBlank { trackState?.filePath?.displayName ?: "unknown" },
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1
             )

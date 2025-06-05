@@ -1,8 +1,10 @@
 package com.example.materialplayer.domain.model
 
+import android.net.Uri
+
 data class Track(
     val id: Long,
-    val filePath: String,
+    val filePath: Uri,
     val parentDir: String,
     val durationMs: Long,
     val title: String?,

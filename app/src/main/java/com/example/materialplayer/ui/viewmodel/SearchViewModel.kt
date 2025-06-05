@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.materialplayer.domain.model.*
 import com.example.materialplayer.domain.repository.LibraryRepository
+import com.example.materialplayer.util.displayName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,9 +22,9 @@ class SearchViewModel @Inject constructor(
 
     /* ─ результаты ─ */
     val results: StateFlow<List<SearchItem>> = combine(
-        repo.allTracksByTitle(),        // Flow<List<Track>>
-        repo.albumsWithArtist(),     // Flow<List<AlbumSummary>>
-        repo.allArtists(),           // Flow<List<Artist>>
+        repo.allTracksByTitle(), // Flow<List<Track>>
+        repo.albumsWithArtist(), // Flow<List<AlbumSummary>>
+        repo.allArtists(), // Flow<List<Artist>>
         _query
     ) { tracks, albums, artists, q ->
         if (q.isBlank()) emptyList() else {
@@ -31,7 +32,7 @@ class SearchViewModel @Inject constructor(
 
             /* треки */
             val t = tracks
-                .filter { (it.title ?: it.filePath.substringAfterLast('/')).lowercase().contains(ql) }
+                .filter { (it.title ?: it.filePath.displayName).lowercase().contains(ql) }
                 .map { SearchItem.Track(it, it.artistName ?: "Unknown") }
 
             /* альбомы */

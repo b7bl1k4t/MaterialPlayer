@@ -12,14 +12,15 @@ import com.example.materialplayer.data.local.scan.FileScannerImpl
 import com.example.materialplayer.data.local.scan.ScanResult
 import com.example.materialplayer.data.mappers.toBrowserItem
 import com.example.materialplayer.data.mappers.toDomain
-import com.example.materialplayer.data.mappers.toFolderItem
 import com.example.materialplayer.data.mappers.toSummary
 import com.example.materialplayer.domain.model.AlbumDetail
 import com.example.materialplayer.domain.model.ArtistDetail
 import com.example.materialplayer.domain.model.BrowserItem
-import com.example.materialplayer.domain.model.FolderItem
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
+import com.example.materialplayer.util.displayName
+import com.example.materialplayer.util.docBaseDecoded
+import com.example.materialplayer.util.docBaseEncoded
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -156,34 +157,28 @@ class RoomLibraryRepository @Inject constructor(
         }
     }
 
-    override fun folderFlow(basePath: String): Flow<List<BrowserItem>> {
-        val docBase = toDocBase(basePath)
-
-        val foldersFlow = trackDao.getFolderInfos(docBase)
-            .map { it.map { dto -> dto.toBrowserItem() } }
-
-        val tracksFlow = trackDao.getTracksInFolder(docBase)
-            .map { it.map { te -> te.toBrowserItem() } }
-
-        return combine(foldersFlow, tracksFlow, List<BrowserItem>::plus)
+    /* RoomLibraryRepository.kt */
+    override suspend fun rootItemFor(uri: Uri): BrowserItem.Folder {
+        val dec = uri.docBaseDecoded()
+        return BrowserItem.Folder(
+            path = uri.docBaseEncoded(),      // encoded!
+            name = uri.displayName,
+            subfolderCount = trackDao.countDistinctSubDirs(dec),
+            trackCount = trackDao.countDirectTracks(dec)
+        )
     }
 
-    private fun toDocBase(path: String): String =
-        if (path.contains("/document/")) path
-        else {
-            val docId = path.substringAfter("/tree/")
-            "$path/document/$docId"
-        }
+
+    override fun folderFlow(basePath: String): Flow<List<BrowserItem>> {
+        val docBaseDec = Uri.parse(basePath).docBaseDecoded()
+
+        val foldersFlow = trackDao.getFolderInfos(docBaseDec)
+            .map { it.map(FolderItemDto::toBrowserItem) }
+
+        val tracksFlow = trackDao.getTracksInFolder(docBaseDec)
+            .map { it.map(TrackEntity::toBrowserItem) }
 
 
-    override fun childrenOf(basePath: String): Flow<List<FolderItem>> {
-        val docBase = toDocBase(basePath)
-        val folders = trackDao.getFolderInfos(docBase)
-            .map { it.map(FolderItemDto::toFolderItem) }
-
-        val tracks = trackDao.getTracksInFolder(docBase)
-            .map { it.map(TrackEntity::toFolderItem) }
-
-        return combine(folders, tracks) { f, t -> f + t }
+        return combine(foldersFlow, tracksFlow, List<BrowserItem>::plus)
     }
 }

@@ -9,6 +9,9 @@ import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.Track
 import com.example.materialplayer.domain.repository.LibraryRepository
 import com.example.materialplayer.ui.composables.LibraryMode
+import com.example.materialplayer.util.displayName
+import com.example.materialplayer.util.docBaseEncoded
+import com.example.materialplayer.util.parentEncoded
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -16,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted.Companion.Eagerly
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.collections.flatten
+import androidx.core.net.toUri
 
 
 @HiltViewModel
@@ -63,11 +67,11 @@ class LibraryViewModel @Inject constructor(
             if (path == null) {
                 rootsFlow.asRootItems()  // Отображаем корни
             } else {
-                repo.folderFlow(path)  // Внутри папки
+                repo.folderFlow(Uri.decode(path))    // Внутри папки
                     .onEach { Log.d("LibraryVM", "childrenOf($path) → $it") }
             }
         }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            .stateIn(viewModelScope, Eagerly, emptyList())
 
 
     /* Данные для остальных режимов */
@@ -90,9 +94,10 @@ class LibraryViewModel @Inject constructor(
     }
 
     // Переход в папку
-    fun onFolderClick(path: String) {
-        if (rootBoundary == null) rootBoundary = path
-        _current.value = path
+    fun onFolderClick(rawPath: String) {
+        val enc = rawPath                           // уже encoded
+        if (rootBoundary == null) rootBoundary = enc
+        _current.value = enc
     }
 
     /** Вызывается при клике на трек: инкремент + запуск воспроизведения */
@@ -103,63 +108,13 @@ class LibraryViewModel @Inject constructor(
     }
 
     // Возвращает родительский путь или null (если надо уйти в список корней)
-    private fun computeParent(cur: String): String? {
-        val root = rootBoundary ?: return null
-        if (!cur.startsWith(root)) return null
-
-        val rel = cur.removePrefix(root).trimStart('/')
-        if (rel.isEmpty()) {
-            return null
-        }
-
-        val segments = rel.split('/')
-        return if (segments.size == 1) {
-            root
-        } else {
-            root + "/" + segments.dropLast(1).joinToString("/")
-        }
-    }
+    private fun computeParent(curEnc: String): String? =
+        curEnc.toUri().parentEncoded()
+            ?.toString()
+            ?.takeIf { rootBoundary == null || it.startsWith(rootBoundary!!) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun Flow<List<Uri>>.asRootItems(): Flow<List<BrowserItem>> =
-        flatMapLatest { roots ->
-            // Для каждого URI создаём отдельный поток с элементами
-            flow {
-                val items = roots.map { uri ->
-                    val tree = Uri.decode(uri.toString())
-                    val docBase = if ("/document/" in tree) tree else {
-                        val id = tree.substringAfter("/tree/")
-                        "$tree/document/$id"
-                    }
-
-                    // Получаем элементы из папки для каждого пути
-                    val list = repo.folderFlow(docBase).first()
-                    val folders = list.filterIsInstance<BrowserItem.Folder>()
-                    val tracks = list.filterIsInstance<BrowserItem.TrackEntry>()
-
-                    val folderItem = BrowserItem.Folder(
-                        path = tree,
-                        name = uri.lastPathSegment?.substringAfterLast(':') ?: "root",
-                        subfolderCount = folders.size,
-                        trackCount = tracks.size
-                    )
-
-                    // Преобразуем треки в TrackEntry
-                    val trackItems: List<BrowserItem.TrackEntry> = tracks.map { track ->
-                        BrowserItem.TrackEntry(
-                            path = track.path,
-                            name = track.name,
-                            track = track.track  // Преобразуем в TrackEntry
-                        )
-                    }
-
-                    // Возвращаем сначала папки, потом треки
-                    listOf(folderItem) + trackItems
-                }
-
-                // Мы можем безопасно вызвать flatten, так как items - это список List<BrowserItem>
-                emit(items.flatten())
-            }
-        }
+    private fun Flow<List<Uri>>.asRootItems(): Flow<List<BrowserItem.Folder>> =
+        mapLatest { roots -> roots.map { repo.rootItemFor(it) } }
 }
 

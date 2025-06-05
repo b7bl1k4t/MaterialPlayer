@@ -6,13 +6,11 @@ import com.example.materialplayer.domain.model.AlbumSummary
 import com.example.materialplayer.domain.model.Artist
 import com.example.materialplayer.domain.model.ArtistDetail
 import com.example.materialplayer.domain.model.BrowserItem
-import com.example.materialplayer.domain.model.FolderItem
 import com.example.materialplayer.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 interface LibraryRepository {
     fun allTracksByTitle(): Flow<List<Track>>
-    fun childrenOf(path: String): Flow<List<FolderItem>>
     fun rootFolderItems(rootList: List<String>): Flow<List<BrowserItem>> // Новая функция для корней
     fun albumsWithArtist(): Flow<List<Pair<AlbumSummary, String>>>
     fun allArtists(): Flow<List<Artist>>                   // Artist list
@@ -25,4 +23,5 @@ interface LibraryRepository {
     suspend fun scanLibrary(roots: List<Uri>)
     suspend fun clearLibrary()
     suspend fun incrementPlayCount(trackId: Long)
+    suspend fun rootItemFor(uri: Uri): BrowserItem.Folder
 }
