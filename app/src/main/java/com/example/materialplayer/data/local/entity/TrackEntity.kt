@@ -1,5 +1,6 @@
 package com.example.materialplayer.data.local.entity
 
+import android.net.Uri
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -33,7 +34,7 @@ import androidx.room.PrimaryKey
 data class TrackEntity(
     @PrimaryKey(autoGenerate = true) val id: Long,
     @ColumnInfo(name = "file_path")
-    val filePath: String,
+    val filePath: Uri,
     @ColumnInfo(name = "parent_dir")
     val parentDir: String,          // полный путь к папке
     @ColumnInfo(name = "duration_ms")

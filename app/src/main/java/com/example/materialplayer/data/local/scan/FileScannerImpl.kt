@@ -75,12 +75,14 @@ class FileScannerImpl @Inject constructor(
                                     coverUri = null
                                 ) }
 
-                            val parentDir = Uri.decode(doc.uri.toString()).substringBeforeLast('/')
+
+                            val parentDir = doc.parentFile?.uri?.toString()
+                                ?: error("No parent for ${doc.uri}")
                             Log.d("SCAN_DEBUG", "save  parentDir = $parentDir")
 
                             val trackEntity = TrackEntity(
                                 id = 0L,
-                                filePath = Uri.decode(doc.uri.toString()),
+                                filePath = doc.uri,
                                 parentDir = parentDir,
                                 durationMs = durationMs,
                                 playCount = 0,

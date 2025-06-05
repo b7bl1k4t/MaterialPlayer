@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.materialplayer.data.local.dto.FolderItemDto
 import com.example.materialplayer.data.local.entity.TrackEntity
-import com.example.materialplayer.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -61,39 +60,73 @@ interface TrackDao {
     )
     fun getTracksInFolder(docBase: String): Flow<List<TrackEntity>>
 
-    @Query("""
-        WITH rel AS (
-            SELECT
-                parent_dir,
-                SUBSTR(parent_dir, LENGTH(:docBase) + 2) AS rel_path          -- «A/B/C.mp3»
-            FROM   tracks
-            WHERE  parent_dir LIKE :docBase || '/%'    -- всё, что внутри root
-                AND parent_dir !=  :docBase
-        )
+    @Query(
+        """
+    WITH rel AS (
         SELECT
-            :docBase || '/' ||
-                CASE
-                  WHEN INSTR(rel_path,'/') = 0
-                  THEN rel_path                            -- трек/каталог прямо в root
-                  ELSE SUBSTR(rel_path,1,INSTR(rel_path,'/')-1) -- первый каталог «A»
-                END AS path,
-    
-            COUNT(*) AS trackCount,    -- ▲ ВСЕ треки любой глубины
-            COUNT( DISTINCT
-                CASE
-                  WHEN INSTR(rel_path,'/') = 0 THEN NULL
-                  ELSE SUBSTR(rel_path,1,INSTR(rel_path,'/')-1) -- ▼ каталоги только depth=1
-                END
-            ) AS subfolderCount
-        FROM rel
-        GROUP BY path
-        ORDER BY path;
-    """)
+            parent_dir,
+            SUBSTR(parent_dir, LENGTH(:docBase) + 4) AS rel_path
+        FROM tracks
+        WHERE parent_dir LIKE :docBase || '%'       -- внутри docBase
+          AND parent_dir <>  :docBase               -- кроме самой папки
+    )
+    SELECT
+        :docBase || '%2F' ||
+        CASE
+            WHEN INSTR(rel_path,'%2F') = 0
+                 THEN rel_path
+            ELSE SUBSTR(rel_path,1,INSTR(rel_path,'%2F')-1)
+        END AS path,
+        COUNT(*) AS trackCount,
+        COUNT(DISTINCT
+            CASE
+                WHEN INSTR(rel_path,'%2F') = 0 THEN NULL
+                ELSE SUBSTR(rel_path,1,INSTR(rel_path,'%2F')-1)
+            END
+        ) AS subfolderCount
+    FROM rel
+    GROUP BY path
+    ORDER BY path
+    """
+    )
     fun getFolderInfos(docBase: String): Flow<List<FolderItemDto>>
 
     @Query("SELECT COUNT(*) FROM tracks")
     suspend fun countTracks(): Int
 
+    @Query("""
+    SELECT COUNT(*)
+    FROM   tracks
+    WHERE  parent_dir LIKE :docBase || '%'
+    """)
+    suspend fun countTracksRecursive(docBase: String): Int
+
     @Query("UPDATE tracks SET play_count = play_count + 1 WHERE id = :trackId")
     suspend fun incrementPlayCount(trackId: Long)
+
+    @Query(
+        """
+    SELECT COUNT(*) FROM tracks
+    WHERE parent_dir = :dir
+    """
+    )
+    suspend fun countDirectTracks(dir: String): Int
+
+    /** количество *уникальных* подпапок первого уровня (depth = 1) */
+    @Query("""
+    SELECT COUNT(DISTINCT
+       CASE
+         WHEN INSTR(rel, '%2F') = 0
+              THEN rel
+         ELSE SUBSTR(rel, 1, INSTR(rel, '%2F') - 1)
+       END)
+    FROM (
+        SELECT SUBSTR(parent_dir, LENGTH(:dir) + 1) AS rel
+        FROM   tracks
+        WHERE  parent_dir LIKE :dir || '%'
+              AND parent_dir <> :dir
+    )
+    """)
+    suspend fun countDistinctSubDirs(dir: String): Int
+
 }

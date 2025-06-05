@@ -3,6 +3,7 @@ package com.example.materialplayer.data.mappers
 import com.example.materialplayer.data.local.entity.TrackEntity
 import com.example.materialplayer.domain.model.BrowserItem
 import com.example.materialplayer.domain.model.Track
+import com.example.materialplayer.util.displayName
 
 /* Entity -> Domain */
 fun TrackEntity.toDomain() = Track(
@@ -20,9 +21,9 @@ fun TrackEntity.toDomain() = Track(
 )
 
 fun TrackEntity.toBrowserItem() = BrowserItem.TrackEntry(
-    path  = filePath,
-    name  = title ?: filePath.substringAfterLast('/'),
-    track = toDomain()                     // ваш mapper TrackEntity → Track
+    path = filePath.toString(),
+    name = filePath.displayName,
+    track = toDomain()                   // ваш mapper TrackEntity → Track
 )
 
 /* Domain -> Entity */
