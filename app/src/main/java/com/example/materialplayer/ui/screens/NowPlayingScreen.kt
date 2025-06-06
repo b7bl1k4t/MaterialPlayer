@@ -39,8 +39,8 @@ fun NowPlayingScreen(
     val trackState by viewModel.track.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val position by viewModel.positionMs.collectAsState()
+    val duration by viewModel.durationMs.collectAsState()
 
-    val duration = remember { viewModel.durationMs.value }
     var dragging by remember { mutableStateOf(false) }
     var dragPos  by remember { mutableFloatStateOf(0f) }
 
@@ -68,7 +68,7 @@ fun NowPlayingScreen(
             // Album art
             Box(
                 modifier = Modifier
-                    .size(300.dp)
+                    .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
             ){
@@ -106,7 +106,7 @@ fun NowPlayingScreen(
                     onClick = viewModel::onPrev,
                     onLongClick = { viewModel.onSeek(max(0L, position - 10_000L)) },
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(72.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
                 ) {
@@ -117,7 +117,7 @@ fun NowPlayingScreen(
                     )
                 }
 
-                Spacer(Modifier.width(24.dp))
+                Spacer(Modifier.width(12.dp))
 
                 IconButton(
                     onClick = { viewModel.onPlayPause() },
@@ -125,6 +125,7 @@ fun NowPlayingScreen(
                         .size(72.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
+                        .weight(1f)
                 ) {
                     Icon(
                         if (isPlaying) painterResource(R.drawable.outline_pause_24) else painterResource(R.drawable.outline_play_arrow_24),
@@ -133,13 +134,13 @@ fun NowPlayingScreen(
                     )
                 }
 
-                Spacer(Modifier.width(24.dp))
+                Spacer(Modifier.width(12.dp))
 
                 IconButton(
                     onClick = viewModel::onNext,
                     onLongClick = { viewModel.onSeek(position + 10_000L)  },
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(72.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
                 ) {

@@ -1,5 +1,6 @@
 package com.example.materialplayer.ui.screens
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -12,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.materialplayer.ui.composables.BottomBar
+import com.example.materialplayer.ui.composables.MiniPlayerHost
 import com.example.materialplayer.ui.navigation.Navigation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -19,7 +21,10 @@ import com.example.materialplayer.ui.navigation.Navigation
 fun MainScreen(navController: NavHostController) {
     Scaffold(
         bottomBar = {
-            BottomBar(navController)  // ваш BottomBar
+            Column {
+                MiniPlayerHost(navController)
+                BottomBar(navController)
+            }
         }
     ) { innerPadding ->
         NavHost(

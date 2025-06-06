@@ -5,6 +5,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.example.materialplayer.data.player.ExoPlaybackRepository
 import com.example.materialplayer.data.player.PlaybackConnection
 import com.example.materialplayer.data.player.PlaybackRepository
+import com.example.materialplayer.data.repository.RoomHistoryRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,8 +28,9 @@ object PlayerModule {
     @Provides @Singleton
     fun providePlaybackRepo(
         player: ExoPlayer,
+        repository: RoomHistoryRepository,
         context: Context
-    ): PlaybackRepository = ExoPlaybackRepository(player, context)
+    ): PlaybackRepository = ExoPlaybackRepository(player, repository, context)
 
     /** Connection, чтобы ViewModel совсем не трогали репозиторий напрямую */
     @Provides @Singleton

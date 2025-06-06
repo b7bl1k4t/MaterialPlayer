@@ -28,7 +28,7 @@ interface PlaybackHistoryDao {
     @Query("""
     SELECT tr.*, COUNT(*) AS play_count
     FROM   playback_history ph
-    JOIN   tracks           tr ON tr.id = ph.track_id
+    JOIN   tracks tr ON tr.id = ph.track_id
     GROUP  BY ph.track_id
     ORDER  BY play_count DESC
     LIMIT  :limit

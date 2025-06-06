@@ -67,18 +67,23 @@ fun FolderView(
 
 
 @Composable
-fun TitleListView(list: List<Track>) {
+fun TitleListView(
+    list: List<Track>,
+    onTrack: (Track) -> Unit
+) {
     LazyColumn {
         items(list) { track ->
             ListItem(
-                headlineContent = { Text(track.title ?: "Unknown") },
-                supportingContent = { Text(track.artistName ?: "Unknown") }
+                headlineContent    = { Text(track.title ?: "Unknown") },
+                supportingContent  = { Text(track.artistName ?: "Unknown") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onTrack(track) }   // ← обработчик
             )
             HorizontalDivider()
         }
     }
 }
-
 @Composable
 fun AlbumListView(
     albums: List<Pair<AlbumSummary, String>>,

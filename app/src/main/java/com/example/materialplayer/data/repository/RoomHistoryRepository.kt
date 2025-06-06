@@ -26,6 +26,6 @@ class RoomHistoryRepository @Inject constructor(
         historyDao.insert(PlaybackHistoryEntity(
             trackId = track.id,
             playedAt = System.currentTimeMillis()
-            ))
+        ))
     }
 }

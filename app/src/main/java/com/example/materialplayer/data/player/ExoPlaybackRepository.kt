@@ -6,6 +6,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.materialplayer.domain.model.Track
+import com.example.materialplayer.domain.repository.HistoryRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,8 @@ private const val RESTART_THRESHOLD_MS = 2_000L
 
 @Singleton
 class ExoPlaybackRepository @Inject constructor(
-    val player: ExoPlayer,                    // Hilt даёт из модуля
+    val player: ExoPlayer,
+    private val history: HistoryRepository,
     @ApplicationContext ctx: Context
 ) : PlaybackRepository {
 
@@ -34,6 +36,7 @@ class ExoPlaybackRepository @Inject constructor(
     private val _playing = MutableStateFlow(false)
     private val _posMs = MutableStateFlow(0L)
     private val _durationMs = MutableStateFlow(0L)
+    private var queueCache: Map<String, Track> = emptyMap()
 
     override val currentTrack: StateFlow<Track?> = _current.asStateFlow()
     override val isPlaying: StateFlow<Boolean> = _playing.asStateFlow()
@@ -44,22 +47,13 @@ class ExoPlaybackRepository @Inject constructor(
     init {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
-                _current.value = item?.mediaId?.toLongOrNull()?.let { id ->
-                    // получите трек из БД если нужно, пока хватит «заглушки»
-                    Track(
-                        id = id,
-                        filePath = item.localConfiguration?.uri ?: Uri.EMPTY,
-                        parentDir = item.mediaMetadata.artist.toString(),
-                        coverUri = item.mediaMetadata.artworkUri.toString(),
-                        durationMs = item.mediaMetadata.durationMs ?: 0L,
-                        title = null,
-                        artistId = null,
-                        albumId = null,
-                        artistName = null,
-                        albumName = null,
-                        genre = null,
-                        trackNumber = null
-                    )
+                val track = item?.mediaId?.let(queueCache::get)
+                _current.value = track
+                _durationMs.value = track?.durationMs ?: 0L
+                _posMs.value = 0L
+
+                track?.let { t ->
+                    scope.launch { history.add(t) }
                 }
             }
 
@@ -85,17 +79,18 @@ class ExoPlaybackRepository @Inject constructor(
         scope.launch {
             while (isActive) {
                 _posMs.value = player.currentPosition
-                delay(500)          // 2× в секунду более чем достаточно
+                delay(500)
             }
         }
     }
 
-    override fun onCleared() {        // главное — не забыть очиститься
+    override fun onCleared() {
         scope.cancel()
         player.release()
     }
 
     override fun play(track: Track, queue: List<Track>) {
+        queueCache = queue.associateBy { it.id.toString() }
         player.setMediaItems(queue.map { it.toMediaItem() })
         player.prepare()
         val index = queue.indexOf(track).coerceAtLeast(0)

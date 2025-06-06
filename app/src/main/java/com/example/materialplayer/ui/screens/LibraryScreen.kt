@@ -73,7 +73,14 @@ fun LibraryScreen(
                     }
                 }
             }
-            LibraryMode.Title -> TitleListView(titles)
+            LibraryMode.Title -> TitleListView(
+                list = titles,
+                onTrack = { track ->
+                    viewModel.onTrackClick(track)
+                    playback.play(track, titles)
+                    nav.navigate(Navigation.NowPlaying.route)
+                }
+            )
             LibraryMode.Album -> AlbumListView(
                 albums  = albums,
                 onClick = { nav.navigate("album/${it.id}") }

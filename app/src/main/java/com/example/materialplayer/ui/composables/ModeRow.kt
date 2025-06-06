@@ -18,6 +18,11 @@ enum class LibraryMode(val title: String) {
     Artist("Artist")
 }
 
+enum class PlaylistMode(val title: String) {
+    History("History"),
+    MostPlayed("Most played")
+}
+
 @Composable
 fun ModeRow(
     selected: LibraryMode,
@@ -35,6 +40,28 @@ fun ModeRow(
                 onClick = { onSelect(mode) },
                 label = { Text(mode.title) },
                 modifier = Modifier.padding(end = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun PlaylistsModeRow(
+    selected: PlaylistMode,
+    onSelect: (PlaylistMode) -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        PlaylistMode.entries.forEach { mode ->
+            FilterChip(
+                selected = mode == selected,
+                onClick   = { onSelect(mode) },
+                label     = { Text(mode.title) },
+                modifier  = Modifier.padding(end = 8.dp)
             )
         }
     }
